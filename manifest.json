@@ -1,0 +1,14 @@
+{
+  "name": "AlgoBreaker",
+  "description": "Extension to block recomendtaions on youtube",
+  "version": "1.0",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "host_permissions": ["https://www.youtube.com/*"],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
