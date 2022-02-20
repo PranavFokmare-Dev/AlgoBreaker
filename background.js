@@ -30,110 +30,31 @@ function AlgoBreakerMain(mode, tabId, url) {
 }
 
 function AlgoBreakerOn(url, tabId) {
-  const isHomePage = url == "https://www.youtube.com/";
-  const watchingYtVideo = url.startsWith("https://www.youtube.com/watch");
-  const userSearching = url.startsWith(
-    "https://www.youtube.com/results?search_query"
+  const hideCss = `${youtubePage.homePage}{visibility:hidden}
+${youtubePage.videoPlayerEndScreen}{visibility:hidden}
+${youtubePage.videoPlayerSideContent}{visibility:hidden}
+`;
+  console.log(hideCss);
+  chrome.scripting.insertCSS(
+    {
+      target: { tabId: tabId },
+      css: hideCss,
+    },
+    () => {}
   );
-  if (isHomePage) {
-    console.log("home page", url);
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      function: Hide,
-      args: [youtubePage.homePage],
-    });
-  } else if (watchingYtVideo) {
-    console.log("watching video", url);
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      function: Hide,
-      args: [youtubePage.videoPlayerSideContent],
-    });
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      function: Hide,
-      args: [youtubePage.videoPlayerEndScreen],
-    });
-  } else if (userSearching) {
-    console.log("user searching", url);
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      function: Show,
-      args: [youtubePage.search],
-    });
-  }
 }
 
 function AlgoBreakerOff(tabId) {
-  chrome.scripting.executeScript({
-    target: { tabId: tabId },
-    function: Show,
-    args: [youtubePage.homePage],
-  });
-  chrome.scripting.executeScript({
-    target: { tabId: tabId },
-    function: Show,
-    args: [youtubePage.search],
-  });
-  chrome.scripting.executeScript({
-    target: { tabId: tabId },
-    function: Show,
-    args: [youtubePage.videoPlayerEndScreen],
-  });
-  chrome.scripting.executeScript({
-    target: { tabId: tabId },
-    function: Show,
-    args: [youtubePage.videoPlayerSideContent],
-  });
-}
-
-function Show(query) {
-  const element = document.querySelector(query);
-  console.log("SHOW CALLED", query);
-  element.style.visibility = "visible";
-}
-function Hide(query) {
-  const element = document.querySelector(query);
-  console.log("HIDE CALLED,", query);
-  element.style.visibility = "hidden";
-}
-
-function ShowHomePage() {
-  const element = document.querySelector(youtubePage.homePage);
-  element.style.visibility = "visible";
-}
-
-function ShowVideoPlayerEndScreen() {
-  const element = document.querySelector(youtubePage.videoPlayerEndScreen);
-  element.style.visibility = "visible";
-}
-
-function ShowVideoPlayerSideContent() {
-  const element = document.querySelector(youtubePage.videoPlayerSideContent);
-  element.style.visibility = "visible";
-}
-
-function ShowSearch() {
-  const element = document.querySelector(youtubePage.search);
-  element.style.visibility = "visible";
-}
-
-function HideHomePage() {
-  const element = document.querySelector(youtubePage.homePage);
-  element.style.visibility = "hidden";
-}
-
-function HideVideoPlayerEndScreen() {
-  const element = document.querySelector(youtubePage.videoPlayerEndScreen);
-  element.style.visibility = "hidden";
-}
-
-function HideVideoPlayerSideContent() {
-  const element = document.querySelector(youtubePage.videoPlayerSideContent);
-  element.style.visibility = "hidden";
-}
-
-function ShowSearch() {
-  const element = document.querySelector(youtubePage.search);
-  element.style.visibility = "visible";
+  const showCss = `${youtubePage.homePage}{visibility:visible}
+  ${youtubePage.videoPlayerEndScreen}{visibility:visible}
+  ${youtubePage.videoPlayerSideContent}{visibility:visible}
+  `;
+  console.log(showCss);
+  chrome.scripting.insertCSS(
+    {
+      target: { tabId: tabId },
+      css: showCss,
+    },
+    () => {}
+  );
 }
