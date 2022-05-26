@@ -5,6 +5,7 @@ const youtubePage = {
     "#movie_player > div.html5-endscreen.ytp-player-content.videowall-endscreen.ytp-show-tiles > div",
   videoPlayerSideContent: "#items > ytd-item-section-renderer",
   search: "#page-manager > ytd-search",
+  playlistSideContent :"#related"
 };
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -33,8 +34,11 @@ function AlgoBreakerOn(url, tabId) {
   const hideCss = `${youtubePage.homePage}{visibility:hidden}
 ${youtubePage.videoPlayerEndScreen}{visibility:hidden}
 ${youtubePage.videoPlayerSideContent}{visibility:hidden}
+${youtubePage.playlistSideContent}{visibility:hidden}
 `;
   console.log(hideCss);
+  // adding if url starts with
+  // adding show css if the url doesnt starts with
   chrome.scripting.insertCSS(
     {
       target: { tabId: tabId },
@@ -48,6 +52,7 @@ function AlgoBreakerOff(tabId) {
   const showCss = `${youtubePage.homePage}{visibility:visible}
   ${youtubePage.videoPlayerEndScreen}{visibility:visible}
   ${youtubePage.videoPlayerSideContent}{visibility:visible}
+  ${youtubePage.playlistSideContent}{visibility:visible}
   `;
   console.log(showCss);
   chrome.scripting.insertCSS(
