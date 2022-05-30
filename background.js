@@ -1,11 +1,11 @@
 const youtubePage = {
   homePage:
-    "#page-manager > ytd-browse > ytd-two-column-browse-results-renderer",
+    "#primary > ytd-rich-grid-renderer",
   videoPlayerEndScreen:
-    "#movie_player > div.html5-endscreen.ytp-player-content.videowall-endscreen.ytp-show-tiles > div",
+    "#movie_player > div.html5-endscreen.ytp-player-content.videowall-endscreen.ytp-show-tiles",
   videoPlayerSideContent: "#items > ytd-item-section-renderer",
   search: "#page-manager > ytd-search",
-  playlistSideContent :"#related"
+  playlistSideContent :"#items > ytd-item-section-renderer"
 };
 
 chrome.runtime.onInstalled.addListener(() => {
