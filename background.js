@@ -1,21 +1,24 @@
-const youtubePage = {
+const webPage = {
   homePage:
     "#primary > ytd-rich-grid-renderer",
   videoPlayerEndScreen:
     "#movie_player > div.html5-endscreen.ytp-player-content.videowall-endscreen.ytp-show-tiles",
   videoPlayerSideContent: "#items > ytd-item-section-renderer",
   search: "#page-manager > ytd-search",
-  playlistSideContent :"#items > ytd-item-section-renderer"
+  playlistSideContent :"#items > ytd-item-section-renderer",
+  videoPlayerSideContent2:"#secondary",
 };
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.set({ mode: "off" }, function () {});
+  chrome.storage.sync.set({ mode: "on" }, function () {});
 });
 
+//Button click -> on/off call
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   AlgoBreakerMain(request.mode, request.tabId, request.tabUrl);
 });
 
+//Change in URL|tab created changed url
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   chrome.storage.sync.get(["mode"], function (result) {
     const mode = result.mode;
@@ -31,10 +34,12 @@ function AlgoBreakerMain(mode, tabId, url) {
 }
 
 function AlgoBreakerOn(url, tabId) {
-  const hideCss = `${youtubePage.homePage}{visibility:hidden}
-${youtubePage.videoPlayerEndScreen}{visibility:hidden}
-${youtubePage.videoPlayerSideContent}{visibility:hidden}
-${youtubePage.playlistSideContent}{visibility:hidden}
+  const hideCss = `${webPage.homePage}{visibility:hidden}
+${webPage.videoPlayerEndScreen}{visibility:hidden}
+${webPage.videoPlayerSideContent}{visibility:hidden}
+${webPage.playlistSideContent}{visibility:hidden}
+${webPage.videoPlayerSideContent2}{visibility:hidden}
+${webPage.amazonPrimeAutoPlay2}{visibility:hidden}
 `;
   console.log(hideCss);
   // adding if url starts with
@@ -49,10 +54,12 @@ ${youtubePage.playlistSideContent}{visibility:hidden}
 }
 
 function AlgoBreakerOff(tabId) {
-  const showCss = `${youtubePage.homePage}{visibility:visible}
-  ${youtubePage.videoPlayerEndScreen}{visibility:visible}
-  ${youtubePage.videoPlayerSideContent}{visibility:visible}
-  ${youtubePage.playlistSideContent}{visibility:visible}
+  const showCss = `${webPage.homePage}{visibility:visible}
+  ${webPage.videoPlayerEndScreen}{visibility:visible}
+  ${webPage.videoPlayerSideContent}{visibility:visible}
+  ${webPage.playlistSideContent}{visibility:visible}
+  ${webPage.videoPlayerSideContent2}{visibility:visible}
+  ${webPage.amazonPrimeAutoPlay2}{visibility:visible}
   `;
   console.log(showCss);
   chrome.scripting.insertCSS(
