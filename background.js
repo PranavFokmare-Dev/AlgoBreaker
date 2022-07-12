@@ -22,13 +22,26 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   chrome.storage.sync.get(["mode"], function (result) {
     const mode = result.mode;
-    console.log(`THIS current mode ${mode} for ${tab.id} ${tab.url}`);
     AlgoBreakerMain(mode, tab.id, tab.url);
   });
 });
+chrome.tabs.onActivated.addListener(
+  function(activeInfo){
+    let tabId = activeInfo.tabId;
+    chrome.tabs.get(tabId,function(tab){
+      console.log(`Active ${tabId}:${tab.url} - ${Date.now()}.`)
+    })
+  }
+)
+chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
+  if (changeInfo.status == 'complete') {
+    console.log(`updated ${tabId}:${tab.url} - ${Date.now()}  `)
+  }
+})
+
+
 
 function AlgoBreakerMain(mode, tabId, url) {
-  console.log("current mode " + mode + " tabid:" + tabId + " url:" + url);
   if (mode === "on") AlgoBreakerOn(url, tabId);
   else AlgoBreakerOff(tabId);
 }
@@ -41,7 +54,6 @@ ${webPage.playlistSideContent}{visibility:hidden}
 ${webPage.videoPlayerSideContent2}{visibility:hidden}
 ${webPage.amazonPrimeAutoPlay2}{visibility:hidden}
 `;
-  console.log(hideCss);
   // adding if url starts with
   // adding show css if the url doesnt starts with
   chrome.scripting.insertCSS(
@@ -61,7 +73,6 @@ function AlgoBreakerOff(tabId) {
   ${webPage.videoPlayerSideContent2}{visibility:visible}
   ${webPage.amazonPrimeAutoPlay2}{visibility:visible}
   `;
-  console.log(showCss);
   chrome.scripting.insertCSS(
     {
       target: { tabId: tabId },
