@@ -1,88 +1,83 @@
+const webPage = {
+  homePage:
+    "#primary > ytd-rich-grid-renderer",
+  videoPlayerEndScreen:
+    "#movie_player > div.html5-endscreen.ytp-player-content.videowall-endscreen.ytp-show-tiles",
+  videoPlayerSideContent: "#items > ytd-item-section-renderer",
+  search: "#page-manager > ytd-search",
+  playlistSideContent :"#items > ytd-item-section-renderer",
+  videoPlayerSideContent2:"#secondary",
+};
+
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.set({ mode: "off" }, function () {});
+  chrome.storage.sync.set({ mode: "on" }, function () {});
 });
 
+//Button click -> on/off call
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   AlgoBreakerMain(request.mode, request.tabId, request.tabUrl);
 });
 
+//Change in URL|tab created changed url
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   chrome.storage.sync.get(["mode"], function (result) {
     const mode = result.mode;
-    console.log(`THIS current mode ${mode} for ${tab.id} ${tab.url}`);
     AlgoBreakerMain(mode, tab.id, tab.url);
   });
 });
+chrome.tabs.onActivated.addListener(
+  function(activeInfo){
+    let tabId = activeInfo.tabId;
+    chrome.tabs.get(tabId,function(tab){
+      console.log(`Active ${tabId}:${tab.url} - ${Date.now()}.`)
+    })
+  }
+)
+chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
+  if (changeInfo.status == 'complete') {
+    console.log(`updated ${tabId}:${tab.url} - ${Date.now()}  `)
+  }
+})
+
+
 
 function AlgoBreakerMain(mode, tabId, url) {
-  console.log("current mode " + mode + " tabid:" + tabId + " url:" + url);
   if (mode === "on") AlgoBreakerOn(url, tabId);
   else AlgoBreakerOff(tabId);
 }
 
 function AlgoBreakerOn(url, tabId) {
-  const isHomePage = url == "https://www.youtube.com/";
-  const watchingYtVideo = url.startsWith("https://www.youtube.com/watch");
-  const userSearching = url.startsWith(
-    "https://www.youtube.com/results?search_query"
+  const hideCss = `${webPage.homePage}{visibility:hidden}
+${webPage.videoPlayerEndScreen}{visibility:hidden}
+${webPage.videoPlayerSideContent}{visibility:hidden}
+${webPage.playlistSideContent}{visibility:hidden}
+${webPage.videoPlayerSideContent2}{visibility:hidden}
+${webPage.amazonPrimeAutoPlay2}{visibility:hidden}
+`;
+  // adding if url starts with
+  // adding show css if the url doesnt starts with
+  chrome.scripting.insertCSS(
+    {
+      target: { tabId: tabId },
+      css: hideCss,
+    },
+    () => {}
   );
-  if (isHomePage) {
-    console.log("home page", url);
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      function: hideRecommendationsOnHomePage,
-    });
-  } else if (watchingYtVideo) {
-    console.log("watching video", url);
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      function: hideRecommendationsOnWatching,
-    });
-  } else if (userSearching) {
-    console.log("user searching", url);
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      function: showRecommendationsOnSearch,
-    });
-  }
 }
 
 function AlgoBreakerOff(tabId) {
-  chrome.scripting.executeScript({
-    target: { tabId: tabId },
-    function: showRecommendationsOnHomePage,
-  });
-  chrome.scripting.executeScript({
-    target: { tabId: tabId },
-    function: showRecommendationsOnWatching,
-  });
-  chrome.scripting.executeScript({
-    target: { tabId: tabId },
-    function: showRecommendationsOnSearch,
-  });
-}
-
-function hideRecommendationsOnHomePage() {
-  const element = document.querySelector("#primary > ytd-rich-grid-renderer");
-  element.style.visibility = "hidden";
-}
-function showRecommendationsOnHomePage() {
-  const element = document.querySelector("#primary > ytd-rich-grid-renderer");
-  element.style.visibility = "visible";
-}
-function showRecommendationsOnSearch() {
-  const element = document.querySelector("#page-manager > ytd-search");
-  element.style.visibility = "visible";
-}
-function hideRecommendationsOnWatching() {
-  const element = document.querySelector(
-    "#related > ytd-watch-next-secondary-results-renderer"
+  const showCss = `${webPage.homePage}{visibility:visible}
+  ${webPage.videoPlayerEndScreen}{visibility:visible}
+  ${webPage.videoPlayerSideContent}{visibility:visible}
+  ${webPage.playlistSideContent}{visibility:visible}
+  ${webPage.videoPlayerSideContent2}{visibility:visible}
+  ${webPage.amazonPrimeAutoPlay2}{visibility:visible}
+  `;
+  chrome.scripting.insertCSS(
+    {
+      target: { tabId: tabId },
+      css: showCss,
+    },
+    () => {}
   );
-  element.style.visibility = "hidden";
-}
-function showRecommendationsOnWatching() {
-  const element = document.querySelector(
-    "#related > ytd-watch-next-secondary-results-renderer"
-  );
-  element.style.visibility = "visible";
 }
