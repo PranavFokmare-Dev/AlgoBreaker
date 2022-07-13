@@ -87,7 +87,7 @@ chrome.tabs.onActivated.addListener(
     let tabId = activeInfo.tabId;
     let currentTabId = await getFromStorage("currentTabId");
     if(currentTabId != null && currentTabId !== undefined){
-      endTabSession(currentTabId);
+      await endTabSession(currentTabId);
     }
     currentTabId = tabId;
     await setInStorage({currentTabId:tabId});
@@ -110,22 +110,35 @@ chrome.tabs.onActivated.addListener(
 )
 
 
-function endTabSession(tabId){
-  // const tabSessions = await getTabSessions();
-  // if(tabSessions[tabId] !== undefined)){
-  //   const session = tabSessions[tabId];
-  //   const timeSpent = getTimeSpent(session);
-  //   await addToHistory(tab, timeSpent);
-  //   session.startTime = 0;
-  //   session.endTime = 0;
-  //   await saveTabSessions(tabSessions);
-  //   console.log(await getTabSessions());
-  // }
-  console.log(`ending ${tabId}`);
+async function endTabSession(tabId){
+  const tabSessions = await getTabSessions();
+  if(tabSessions[tabId] !== undefined){
+    const session = tabSessions[tabId];
+    const timeSpent = getTimeSpent(session);
+    await addToHistory(session, timeSpent);
+    session.startTime = 0;
+    session.endTime = 0;
+    await saveTabSessions(tabSessions);
+  }
 }
 
+async function addToHistory(session, timeSpent){
+  const history = await getHistory();
+  if(history[session.url] === undefined){
+    history[session.url] = 0;
+  }
+  history[session.url] += timeSpent;
+  await saveHistory(history);
+}
+async function saveHistory(history){
+  await setInStorage({history:history});
+}
+async function getHistory(){
+  let history = await getFromStorage("history");
+  return (history === undefined)?{}:history;
+}
 async function getTabSessions(){
-  let tabSessions = await getFromStorage("tabSession");
+  let tabSessions = await getFromStorage("tabSessions");
   return (tabSessions === undefined)?{}:tabSessions;
 }
 async function saveTabSessions(map){
