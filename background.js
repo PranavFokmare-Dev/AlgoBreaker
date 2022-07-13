@@ -25,19 +25,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     AlgoBreakerMain(mode, tab.id, tab.url);
   });
 });
-chrome.tabs.onActivated.addListener(
-  function(activeInfo){
-    let tabId = activeInfo.tabId;
-    chrome.tabs.get(tabId,function(tab){
-      console.log(`Active ${tabId}:${tab.url} - ${Date.now()}.`)
-    })
-  }
-)
-chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
-  if (changeInfo.status == 'complete') {
-    console.log(`updated ${tabId}:${tab.url} - ${Date.now()}  `)
-  }
-})
+
 
 
 
@@ -80,4 +68,53 @@ function AlgoBreakerOff(tabId) {
     },
     () => {}
   );
+}
+
+
+
+//Analytics code
+const analyticsEnum = {
+  tabId_null : -1
+};
+chrome.tabs.onActivated.addListener(
+  async function(activeInfo){
+    console.log(activeInfo);
+  }
+)
+chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
+  if (changeInfo.status == 'complete') {
+    console.log(`updated ${tabId}:${tab.url} - ${Date.now()}  `)
+  }
+})
+
+function getFromStorage(key){
+  return new Promise((resolve, reject) => {
+    chrome.storage.sync.get([key], function(result){
+      const value = result[key];
+      if(chrome.runtime.lastError){
+        console.log("error occured"+chrome.runtime.error);
+      }
+      else{
+        resolve(value);
+      }
+    })
+
+  }); 
+}
+
+
+function setInStorage(data){
+  return new Promise((resolve, reject) => {
+    chrome.storage.sync.set(data, function () {
+      if(chrome.runtime.lastError){
+        console.log("error occured"+chrome.runtime.error);
+      }
+      else{
+        console.log("Stored data");
+        console.log(data);
+        resolve();
+      }
+    });
+
+  }); 
 }
