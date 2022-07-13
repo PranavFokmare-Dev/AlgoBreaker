@@ -13,7 +13,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.sync.set({ mode: "on" }, function () {});
   console.log("runtime on installed");
   await setInStorage({mode:"on"});
-  await setInStorage({tabSessions:new Map()});
+  await saveTabSessions(new Map());
 });
 
 //Button click -> on/off call
@@ -79,7 +79,8 @@ function AlgoBreakerOff(tabId) {
 
 
 const analyticsEnum = {
-  currentTabId:"currentTabId"
+  currentTabId:"currentTabId",
+  newTabUrl :"chrome://newtab/"
 };
 chrome.tabs.onActivated.addListener(
   async function(activeInfo){
@@ -97,14 +98,14 @@ chrome.tabs.onActivated.addListener(
       startTime: 0,
       endTime :0
     });
-    if(tabInfo.url !== ""){
+    if(tabInfo.url !== analyticsEnum.newTabUrl){
       tabSessions.set(tabId,{
         url:tabInfo.url,
         startTime:Date.now(),
         endTime:Date.now()
       })
     }
-    await setInStorage({tabSessions:tabSessions});
+    await saveTabSessions(tabSessions);
     console.log(await getTabSessions());
   }
 )
