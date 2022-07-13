@@ -9,8 +9,11 @@ const webPage = {
   videoPlayerSideContent2:"#secondary",
 };
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.sync.set({ mode: "on" }, function () {});
+  console.log("runtime on installed");
+  await setInStorage({mode:"on"});
+  await setInStorage({tabSessions:new Map()});
 });
 
 //Button click -> on/off call
@@ -73,6 +76,8 @@ function AlgoBreakerOff(tabId) {
 
 
 //Analytics code
+
+
 const analyticsEnum = {
   currentTabId:"currentTabId"
 };
@@ -85,8 +90,36 @@ chrome.tabs.onActivated.addListener(
     }
     currentTabId = tabId;
     await setInStorage({currentTabId:tabId});
+    const tabInfo = await getTabInfo(tabId);
+    let tabSessions = await getTabSessions();
+    tabSessions.set(tabId, {
+      url:"",
+      startTime: 0,
+      endTime :0
+    });
+    if(tabInfo.url !== ""){
+      tabSessions.set(tabId,{
+        url:tabInfo.url,
+        startTime:Date.now(),
+        endTime:Date.now()
+      })
+    }
+    await setInStorage({tabSessions:tabSessions});
+    console.log(await getTabSessions());
   }
 )
+
+async function getTabSessions(){
+  let tabSessions = await getFromStorage("tabSessions");
+  if(tabSessions === undefined){
+    tabSessions = new Map();
+  }
+  return (tabSessions === undefined)?new Map():new Map(Object.entries(tabSessions));
+}
+
+async function saveTabSessions(map){
+  await setInStorage({tabSessions: Object.fromEntries(map)});
+}
 
 function endTabSession(tabId){
   console.log("ending "+tabId);
@@ -115,16 +148,10 @@ function getFromStorage(key){
 
 function setInStorage(data){
   return new Promise((resolve, reject) => {
-    chrome.storage.sync.set(data, function () {
-      if(chrome.runtime.lastError){
-        console.log("error occured"+chrome.runtime.error);
-      }
-      else{
-        //console.log("Stored data");
-        //console.log(data);
-        resolve();
-      }
+    chrome.storage.sync.set(data, function() {
+      resolve();
     });
+    
 
   }); 
 }
@@ -132,7 +159,7 @@ function setInStorage(data){
 function getTabInfo(tabId){
   return new Promise((resolve, reject)=>{
     chrome.tabs.get(tabId,function(tab){
-      resolve({tabId:tabId,tabDetails:tab});
+      resolve(tab);
     })
   });
 }
