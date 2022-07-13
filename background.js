@@ -13,7 +13,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.sync.set({ mode: "on" }, function () {});
   console.log("runtime on installed");
   await setInStorage({mode:"on"});
-  await saveTabSessions(new Map());
+  await saveTabSessions({});
 });
 
 //Button click -> on/off call
@@ -93,38 +93,48 @@ chrome.tabs.onActivated.addListener(
     await setInStorage({currentTabId:tabId});
     const tabInfo = await getTabInfo(tabId);
     let tabSessions = await getTabSessions();
-    tabSessions.set(tabId, {
+    tabSessions[tabId] = {
       url:"",
       startTime: 0,
       endTime :0
-    });
+    };
     if(tabInfo.url !== analyticsEnum.newTabUrl){
-      tabSessions.set(tabId,{
+      tabSessions[tabId] = {
         url:tabInfo.url,
         startTime:Date.now(),
         endTime:Date.now()
-      })
+      };
     }
     await saveTabSessions(tabSessions);
-    console.log(await getTabSessions());
   }
 )
 
-async function getTabSessions(){
-  let tabSessions = await getFromStorage("tabSessions");
-  if(tabSessions === undefined){
-    tabSessions = new Map();
-  }
-  return (tabSessions === undefined)?new Map():new Map(Object.entries(tabSessions));
-}
-
-async function saveTabSessions(map){
-  await setInStorage({tabSessions: Object.fromEntries(map)});
-}
 
 function endTabSession(tabId){
-  console.log("ending "+tabId);
+  // const tabSessions = await getTabSessions();
+  // if(tabSessions[tabId] !== undefined)){
+  //   const session = tabSessions[tabId];
+  //   const timeSpent = getTimeSpent(session);
+  //   await addToHistory(tab, timeSpent);
+  //   session.startTime = 0;
+  //   session.endTime = 0;
+  //   await saveTabSessions(tabSessions);
+  //   console.log(await getTabSessions());
+  // }
+  console.log(`ending ${tabId}`);
 }
+
+async function getTabSessions(){
+  let tabSessions = await getFromStorage("tabSession");
+  return (tabSessions === undefined)?{}:tabSessions;
+}
+async function saveTabSessions(map){
+  await setInStorage({tabSessions: map});
+}
+function getTimeSpent(session){
+  return session.endTime - session.startTime;
+}
+
 chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
   if (changeInfo.status == 'complete') {
     console.log(`updated ${tabId}:${tab.url} - ${Date.now()}  `)
