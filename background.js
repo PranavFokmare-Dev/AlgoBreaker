@@ -74,13 +74,23 @@ function AlgoBreakerOff(tabId) {
 
 //Analytics code
 const analyticsEnum = {
-  tabId_null : -1
+  currentTabId:"currentTabId"
 };
 chrome.tabs.onActivated.addListener(
   async function(activeInfo){
-    console.log(activeInfo);
+    let tabId = activeInfo.tabId;
+    let currentTabId = await getFromStorage("currentTabId");
+    if(currentTabId != null && currentTabId !== undefined){
+      endTabSession(currentTabId);
+    }
+    currentTabId = tabId;
+    await setInStorage({currentTabId:tabId});
   }
 )
+
+function endTabSession(tabId){
+  console.log("ending "+tabId);
+}
 chrome.tabs.onUpdated.addListener( function (tabId, changeInfo, tab) {
   if (changeInfo.status == 'complete') {
     console.log(`updated ${tabId}:${tab.url} - ${Date.now()}  `)
@@ -110,11 +120,19 @@ function setInStorage(data){
         console.log("error occured"+chrome.runtime.error);
       }
       else{
-        console.log("Stored data");
-        console.log(data);
+        //console.log("Stored data");
+        //console.log(data);
         resolve();
       }
     });
 
   }); 
+}
+
+function getTabInfo(tabId){
+  return new Promise((resolve, reject)=>{
+    chrome.tabs.get(tabId,function(tab){
+      resolve({tabId:tabId,tabDetails:tab});
+    })
+  });
 }
