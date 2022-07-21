@@ -1,3 +1,9 @@
+const analyticsEnum = {
+  NoTabSet : -1,
+  newTabUrl :"chrome://newtab/",
+  emptyUrl :"EMPTY_URL",
+  historyRemoverAlarmName : "historyWeeklyRemover"
+}
 const webPage = {
   homePage:
     "#primary > ytd-rich-grid-renderer",
@@ -17,6 +23,8 @@ chrome.runtime.onInstalled.addListener(async () => {
   console.log("runtime on installed");
   await setInStorage({mode:"on"});
   await saveHistory({});
+  const weekDurationInMins = 7 * 24* 60;
+  chrome.alarms.create(analyticsEnum.historyRemoverAlarmName, {periodInMinutes:weekDurationInMins});
 });
 
 //Button click -> on/off call
@@ -84,11 +92,7 @@ function AlgoBreakerOff(tabId) {
 
 
 //Analytics code
-const analyticsEnum = {
-  NoTabSet : -1,
-  newTabUrl :"chrome://newtab/",
-  emptyUrl :"EMPTY_URL"
-}
+
 
 
 chrome.tabs.onActivated.addListener(
@@ -115,10 +119,11 @@ chrome.tabs.onActivated.addListener(
  chrome.tabs.onUpdated.addListener( async function (tabId, changeInfo, tab) {
   const notUpdatedToNewTab = tab.url!=analyticsEnum.newTabUrl 
   if(notUpdatedToNewTab){
+
      if(tabSessions[tabId]!== undefined ){
       const linkUpdatedOnNewTab = tabSessions[tabId].url === analyticsEnum.emptyUrl
        if(linkUpdatedOnNewTab){
-         tabSessions[tabId].url = tab.url;
+         tabSessions[tabId].url = getHostName(tab.url);
          tabSessions[tabId].startTime = Date.now();
        }
        else{
@@ -126,7 +131,7 @@ chrome.tabs.onActivated.addListener(
          if(tabSessions[tabId] !== undefined){
            await endTabSession(tabId);
          }
-         tabSessions[tabId] = {url:tab.url,startTime:Date.now(), endTime:0};
+         tabSessions[tabId] = {url:getHostName(tab.url),startTime:Date.now(), endTime:0};
        }
      }
    }
@@ -195,3 +200,19 @@ function getTabInfo(tabId){
   });
 }
 
+function getHostName(url){
+  const details = new URL(url);
+  return details.hostname;
+}
+
+
+// history remover
+chrome.alarms.onAlarm.addListener(
+  async function(alarm){
+    if(alarm.name === analyticsEnum.historyRemoverAlarmName){
+      console.log("removing History");
+      await saveHistory({});
+    }
+   
+  }
+)
