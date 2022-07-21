@@ -97,6 +97,7 @@ function AlgoBreakerOff(tabId) {
 
 chrome.tabs.onActivated.addListener(
     async function(activeInfo){
+      console.log("Active" + activeInfo.tabId);
         let tabId = activeInfo.tabId;
         if(currentTabId !== analyticsEnum.NoTabSet){
             await endTabSession(currentTabId);
@@ -118,6 +119,8 @@ chrome.tabs.onActivated.addListener(
    )
  chrome.tabs.onUpdated.addListener( async function (tabId, changeInfo, tab) {
   const notUpdatedToNewTab = tab.url!=analyticsEnum.newTabUrl 
+  
+  console.log("update" + tabId);
   if(notUpdatedToNewTab){
 
      if(tabSessions[tabId]!== undefined ){
@@ -128,11 +131,17 @@ chrome.tabs.onActivated.addListener(
        }
        else{
           //In current tab user changed the link
-         if(tabSessions[tabId] !== undefined){
-           await endTabSession(tabId);
+         if(tabId === currentTabId){
+           await endTabSession(tabId); 
+           tabSessions[tabId] = {url:getHostName(tab.url),startTime:Date.now(), endTime:0};
          }
-         tabSessions[tabId] = {url:getHostName(tab.url),startTime:Date.now(), endTime:0};
        }
+     }
+     else{
+      //middle click
+      console.log("middle click");
+      console.log(tab);
+      tabSessions[tabId] = {url:getHostName(tab.url),startTime:0, endTime:0};
      }
    }
  })
@@ -150,6 +159,8 @@ async function endTabSession(tabId) {
 
 chrome.tabs.onRemoved.addListener(
  async function(tabId, removedInfo){
+  
+  console.log("closed" + tabId);
      if(tabSessions[tabId] !== undefined){
         if(tabId == currentTabId) await endTabSession(tabId);
         delete tabSessions[tabId]
@@ -216,3 +227,4 @@ chrome.alarms.onAlarm.addListener(
    
   }
 )
+
