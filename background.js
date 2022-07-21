@@ -151,25 +151,6 @@ chrome.tabs.onRemoved.addListener(
      }
    }
  )
-// chrome.tabs.onRemoved.addListener(
-//   async function(tabId, removedInfo){
-//     console.log("CLOsed "+tabId);
-//     var tabSessions = await getTabSessions();
-//     if(tabSessions[tabId] !== undefined){
-//       const session = tabSessions[tabId];
-//       const timeSpent = Date.now() - tabSessions[tabId].startTime;
-//       await addToHistory(session, timeSpent);
-//       session.startTime = 0;
-//       session.endTime = 0;
-//     }
-//     delete tabSessions[tabId]
-//     await saveTabSessions(tabSessions);
-//   }
-// )
-// const analyticsEnum = {
-//   currentTabId:"currentTabId",
-//   newTabUrl :"chrome://newtab/",
-//   emptyUrl :"EMPTY_URL"
 // };
 // chrome.tabs.onActivated.addListener(
 //   async function(activeInfo){
