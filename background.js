@@ -14,8 +14,16 @@ const webPage = {
   videoPlayerSideContent2: "#secondary",
 };
 
-let currentTabId = -1;
-const tabSessions = {};
+let currentWindowId = -1;
+let windowSessions = {
+  //windowId -> {
+  // currentTabId : 1
+  // tabsessions : {
+  //    url: '',
+  //    startTime: number date.now(),
+  //  }
+  //}
+};
 
 chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.sync.set({ mode: "on" }, function () {});
@@ -37,8 +45,8 @@ chrome.runtime.onMessage.addListener(async function (
   AlgoBreakerMain(request.mode, request.tabId, request.tabUrl);
 
   console.log("SUMMARY");
-  console.log(currentTabId);
-  console.log(tabSessions);
+  console.log(currentWindowId);
+  console.log(windowSessions);
   console.log(await getHistory());
 });
 
@@ -92,13 +100,80 @@ function AlgoBreakerOff(tabId) {
 }
 
 //Analytics code
+chrome.windows.onFocusChanged.addListener(async function (newWindowId) {
+  console.log("window focus changed" + newWindowId);
+  if (isBrowserNotInFocus(newWindowId) && windowSessionExists(newWindowId)) {
+    await endSession(windowSessions[newWindowId].currentTabId, newWindowId);
+  } else if (isExistingBrowserWindow(newWindowId)) {
+    startSessionForActiveTabIn(newWindowId);
+    if (isExistingBrowserWindow(currentWindowId)) {
+      await endSession(getActiveTabInWindow(currentWindowId), currentWindowId);
+    }
+    if (newWindowId != -1) {
+      currentWindowId = newWindowId;
+      console.log("CURRENT WINDOW ID Changed to ", currentWindowId);
+    }
+  } else {
+    if (newWindowId != -1) {
+      currentWindowId = newWindowId;
+      console.log("CURRENT WINDOW ID Changed to ", currentWindowId);
+    }
+  }
+  function isBrowserNotInFocus(windowId) {
+    return windowId == -1;
+  }
+  function windowSessionExists(windowId) {
+    return windowSessions[windowId] !== undefined;
+  }
+  function isExistingBrowserWindow(newWindowId) {
+    return windowSessions[newWindowId] !== undefined;
+  }
+  function startSessionForActiveTabIn(windowId) {
+    let windowSession = windowSessions[windowId];
+    const activeTabId = windowSession.currentTabId;
+    const tabSessions = windowSession.tabSessions;
+    tabSessions[activeTabId].startTime = Date.now();
+    console.log(
+      `In the window ID ${windowId} for tab ${activeTabId} for Url ${tabSessions[activeTabId].url} started the session`
+    );
+  }
+  function getActiveTabInWindow(windowId) {
+    const windowSession = windowSessions[windowId];
+    return windowSession.currentTabId;
+  }
+});
+async function endSession(tabId, windowId) {
+  let tabSessions = windowSessions[windowId].tabSessions;
+  const session = tabSessions[tabId];
+  const timeSpent = getTimeSpent(session);
+  await updateHistory();
+  session.startTime = 0;
 
+  function getTimeSpent(session) {
+    if (session.startTime === 0) return 0;
+    return Date.now() - session.startTime;
+  }
+  async function updateHistory() {
+    let history = await getHistory();
+    if (history[session.url] === undefined) {
+      history[session.url] = 0;
+    }
+    history[session.url] += Math.max(timeSpent, 0);
+    await saveHistory(history);
+  }
+}
 chrome.tabs.onActivated.addListener(async function (activeInfo) {
   console.log("Active" + activeInfo.tabId);
   let tabId = activeInfo.tabId;
-  await endOldSession();
+  let windowId = activeInfo.windowId;
+  let windowSession = getOrCreateWindowSession(windowId);
+  let currentTabId = windowSession.currentTabId;
+  currentWindowId = windowId;
+  const tabSessions = windowSession.tabSessions;
 
+  await endOldSession(currentTabId, windowId);
   currentTabId = tabId;
+  windowSession.currentTabId = tabId;
   const isOldTab = tabSessions[tabId] !== undefined;
   if (isOldTab) {
     tabSessions[tabId].startTime = Date.now();
@@ -110,16 +185,32 @@ chrome.tabs.onActivated.addListener(async function (activeInfo) {
     };
   }
 
-  async function endOldSession() {
+  async function endOldSession(currentTabId, windowId) {
     if (currentTabId !== analyticsEnum.NoTabSet) {
-      await endTabSession(currentTabId);
+      await endSession(currentTabId, windowId);
     }
   }
 });
+
+function getOrCreateWindowSession(windowId) {
+  if (windowSessions[windowId] === undefined) {
+    windowSessions[windowId] = {
+      currentTabId: -1,
+      tabSessions: {},
+    };
+  }
+  return windowSessions[windowId];
+}
+
 chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
   const notUpdatedToNewTab = tab.url != analyticsEnum.newTabUrl;
 
   console.log("update" + tabId);
+  let windowId = tab.windowId;
+  let window = getOrCreateWindowSession(windowId);
+  let tabSessions = window.tabSessions;
+  let currentTabId = window.currentTabId;
+
   if (notUpdatedToNewTab) {
     await handleTabLoadedEvent();
   }
@@ -127,9 +218,9 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
   async function handleTabLoadedEvent() {
     const tabExists = tabSessions[tabId] !== undefined;
     if (tabExists) {
-      const linkUpdatedOnNewTab =
+      const isLinkUpdatedFromNewTab =
         tabSessions[tabId].url === analyticsEnum.emptyUrl;
-      if (linkUpdatedOnNewTab) {
+      if (isLinkUpdatedFromNewTab) {
         initializeSession();
       } else {
         //In current tab user changed the link
@@ -148,7 +239,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 
   async function updateSessionToNewLink() {
     if (tabId === currentTabId) {
-      await endTabSession(tabId);
+      await endSession(tabId, windowId);
       tabSessions[tabId] = {
         url: getHostName(tab.url),
         startTime: Date.now(),
@@ -183,12 +274,24 @@ async function endTabSession(tabId) {
   }
 }
 
-chrome.tabs.onRemoved.addListener(async function (tabId, removedInfo) {
-  console.log("closed" + tabId);
-  const tabExists = tabSessions[tabId] !== undefined;
-  if (tabExists) {
-    if (tabId == currentTabId) await endTabSession(tabId);
-    delete tabSessions[tabId];
+chrome.tabs.onRemoved.addListener(async function (closingTabID, removedInfo) {
+  console.log("closed" + closingTabID);
+  const windowId = removedInfo.windowId;
+  const window = windowSessions[windowId];
+  if (window != undefined) {
+    const tabSessions = window.tabSessions;
+    let currentTabId = window.currentTabId;
+
+    const tabExists = tabSessions[closingTabID] !== undefined;
+    if (tabExists) {
+      if (closingCurrentTab(closingTabID, currentTabId))
+        await endSession(closingTabID, windowId);
+      delete tabSessions[closingTabID];
+    }
+  }
+
+  function closingCurrentTab(closingTabID, currentTabId) {
+    return closingTabID === currentTabId;
   }
 });
 
