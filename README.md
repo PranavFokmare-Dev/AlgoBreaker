@@ -2,7 +2,7 @@
 A Chrome extension to remove the youtube recommendations
 
 things to do:
-1. storing scenarios
+1. storing scenarios -> done
 2. creating a report
 3. Sending notification via mail to the user
 
